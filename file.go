@@ -3,7 +3,6 @@ package gotool
 import (
 	"os"
 	"bufio"
-	"path/filepath"
 	"io/ioutil"
 )
 
@@ -40,20 +39,36 @@ func IsExist(fp string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-//遍历目录获取文件列表(一)
-func RangeDirWalk(dir string)(files []string){
-	filepath.Walk(dir,
-		func(file string, f os.FileInfo, err error) error {
-			if (f == nil) {
-				return err
-			}
-			if f.IsDir() {
-				return nil
-			}
-			files = append(files, file)
-			return nil
-		})
-	return files
+
+//遍历目录获取文件列表
+type Dir struct{
+	Name string
+	Files []os.FileInfo
+}
+var dirInfo []Dir
+
+func RangeDir(dir string)([]Dir, error){
+	var files []os.FileInfo
+	filesInfo, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return dirInfo, err
+	}
+
+	for _, f := range filesInfo {
+		if f.IsDir(){
+			_, err = RangeDir(dir + "/" + f.Name())
+
+		}else {
+			files = append(files, f)
+		}
+
+	}
+	newDir := Dir{
+		Name:dir,
+		Files:files,
+	}
+	dirInfo = append(dirInfo, newDir)
+	return  dirInfo, err
 }
 
 
