@@ -25,11 +25,15 @@ func IsExist(fp string) bool {
 
 //写入内容到文件(存在则追加)
 func WriteByteToFile(data []byte, file string) (size int, err error) {
-	b := bytes.NewBuffer(make([]byte, 0))
-	buf := bufio.NewWriter(b)
-	size, err = buf.Write(data)
-	bw.Flush()
-	return size, err
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	size , err = w.Write(data)
+	w.Flush()
+	return size , err
 }
 
 //复制单文件(bufio缓存)
