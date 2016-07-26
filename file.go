@@ -7,22 +7,6 @@ import (
 )
 
 
-//复制单文件(bufio缓存)
-func CopyFile(srcFile string, destFile string)(size int64, err error){
-	sf, err := os.Open(srcFile)
-	if err != nil {
-		return 0, err
-	}
-	buf := bufio.NewReader(sf)
-	df, err := os.Create(destFile)
-	if err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(df)
-}
-
-
-
 //删除目录
 func Remove(path string) bool {
 	err := os.RemoveAll(path)
@@ -39,15 +23,39 @@ func IsExist(fp string) bool {
 	return err == nil || os.IsExist(err)
 }
 
+//写入内容到文件(存在则追加)
+func WriteByteToFile(data []byte, file string) (size int, err error) {
+	b := bytes.NewBuffer(make([]byte, 0))
+	buf := bufio.NewWriter(b)
+	size, err = buf.Write(data)
+	bw.Flush()
+	return size, err
+}
+
+//复制单文件(bufio缓存)
+func CopyFile(srcFile string, destFile string) (size int64, err error) {
+	sf, err := os.Open(srcFile)
+	if err != nil {
+		return 0, err
+	}
+	buf := bufio.NewReader(sf)
+	df, err := os.Create(destFile)
+	if err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(df)
+}
+
 
 //遍历目录获取文件列表
-type Dir struct{
-	Name string
+type Dir struct {
+	Name  string
 	Files []os.FileInfo
 }
+
 var dirInfo []Dir
 
-func RangeDir(dir string)([]Dir, error){
+func RangeDir(dir string) ([]Dir, error) {
 	var files []os.FileInfo
 	filesInfo, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -55,10 +63,10 @@ func RangeDir(dir string)([]Dir, error){
 	}
 
 	for _, f := range filesInfo {
-		if f.IsDir(){
+		if f.IsDir() {
 			_, err = RangeDir(dir + "/" + f.Name())
 
-		}else {
+		} else {
 			files = append(files, f)
 		}
 
@@ -68,21 +76,21 @@ func RangeDir(dir string)([]Dir, error){
 		Files:files,
 	}
 	dirInfo = append(dirInfo, newDir)
-	return  dirInfo, err
+	return dirInfo, err
 }
 
 
 //递归复制目录
-func CopyDir(srcDir string, destDir string)(err error){
+func CopyDir(srcDir string, destDir string) (err error) {
 	if IsExist(destDir) == false {
 		os.Mkdir(destDir, 0755)
 	}
 	d, err := ioutil.ReadDir(srcDir)
-	for _, file := range d{
-		if file.IsDir(){
+	for _, file := range d {
+		if file.IsDir() {
 			path := srcDir + "/" + file.Name()
 			CopyDir(path, destDir + "/" + file.Name())
-		}else {
+		} else {
 			_, err = CopyFile(srcDir + "/" + file.Name(), destDir + "/" + file.Name())
 		}
 	}
