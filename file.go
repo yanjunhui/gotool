@@ -4,6 +4,9 @@ import (
 	"os"
 	"bufio"
 	"io/ioutil"
+	"crypto/md5"
+	"io"
+	"fmt"
 )
 
 
@@ -36,12 +39,34 @@ func WriteByteToFile(data []byte, file string) (size int, err error) {
 	return size , err
 }
 
+//计算文件Md5
+func FileMd5(file string)(string, error){
+	f, err := os.Open(file)
+	if err != nil{
+		return "", err
+	}
+	defer f.Close()
+	b := bufio.NewReader(f)
+
+	m := md5.New()
+	_, err = io.Copy(m, b)
+	if err != nil{
+		return "", err
+	}
+	return fmt.Sprintf("%x",m.Sum(nil)), err
+
+}
+
+
+
 //复制单文件(bufio缓存)
-func CopyFile(srcFile string, destFile string) (size int64, err error) {
+func CopyFile(srcFile string, destFile string) (int64, error) {
 	sf, err := os.Open(srcFile)
 	if err != nil {
 		return 0, err
 	}
+	defer sf.Close()
+
 	buf := bufio.NewReader(sf)
 	df, err := os.Create(destFile)
 	if err != nil {
@@ -93,7 +118,7 @@ func CopyDir(srcDir string, destDir string) (err error) {
 	for _, file := range d {
 		if file.IsDir() {
 			path := srcDir + "/" + file.Name()
-			CopyDir(path, destDir + "/" + file.Name())
+			go CopyDir(path, destDir + "/" + file.Name())
 		} else {
 			_, err = CopyFile(srcDir + "/" + file.Name(), destDir + "/" + file.Name())
 		}
