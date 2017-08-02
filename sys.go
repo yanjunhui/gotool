@@ -1,11 +1,14 @@
 package gotool
 
 import (
-	"os/exec"
 	"bytes"
-	"golang.org/x/crypto/ssh"
-	"time"
 	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	"golang.org/x/crypto/ssh"
 )
 
 //本地执行命令
@@ -28,10 +31,10 @@ func SSHPasswordLogin(hostAddr string, username string, password string) (*ssh.S
 		Timeout: time.Second * 5,
 	}
 
-	if client, err := ssh.Dial("tcp", hostAddr, config);err != nil{
+	if client, err := ssh.Dial("tcp", hostAddr, config); err != nil {
 		return session, err
 	} else {
-		if session, err = client.NewSession(); err != nil{
+		if session, err = client.NewSession(); err != nil {
 			return session, err
 		}
 		return session, err
@@ -39,7 +42,7 @@ func SSHPasswordLogin(hostAddr string, username string, password string) (*ssh.S
 }
 
 //证书登录远程服务器
-func SSHKeyLogin(hostAddr string, username string, keyFilePath string)(session *ssh.Session, err error) {
+func SSHKeyLogin(hostAddr string, username string, keyFilePath string) (session *ssh.Session, err error) {
 	key, err := ioutil.ReadFile(keyFilePath)
 	if err != nil {
 		return session, err
@@ -57,7 +60,6 @@ func SSHKeyLogin(hostAddr string, username string, keyFilePath string)(session *
 		},
 	}
 
-
 	client, err := ssh.Dial("tcp", hostAddr, config)
 	if err != nil {
 		return session, err
@@ -70,12 +72,20 @@ func SSHKeyLogin(hostAddr string, username string, keyFilePath string)(session *
 }
 
 //远程执行命令
-func RemoteCommand(session *ssh.Session,command string) (string, error){
+func RemoteCommand(session *ssh.Session, command string) (string, error) {
 	var b bytes.Buffer
 	session.Stdout = &b
-	if err := session.Run(command); err == nil{
+	if err := session.Run(command); err == nil {
 		return b.String(), err
-	}else{
+	} else {
 		return "", err
 	}
+}
+
+//获取当前运行路径
+func GetWorkPath() string {
+	if file, err := exec.LookPath(os.Args[0]); err == nil {
+		return filepath.Dir(file) + "/"
+	}
+	return "./"
 }
