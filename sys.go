@@ -64,11 +64,8 @@ func SSHKeyLogin(hostAddr string, username string, keyFilePath string) (session 
 	if err != nil {
 		return session, err
 	}
-	session, err = client.NewSession()
-	if err != nil {
-		return session, err
-	}
-	return session, err
+	
+	return client.NewSession()
 }
 
 //远程执行命令
