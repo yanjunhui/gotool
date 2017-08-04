@@ -34,10 +34,7 @@ func SSHPasswordLogin(hostAddr string, username string, password string) (*ssh.S
 	if client, err := ssh.Dial("tcp", hostAddr, config); err != nil {
 		return session, err
 	} else {
-		if session, err = client.NewSession(); err != nil {
-			return session, err
-		}
-		return session, err
+		return client.NewSession()
 	}
 }
 
