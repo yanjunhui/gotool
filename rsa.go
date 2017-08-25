@@ -73,10 +73,6 @@ func RsaEncrypt(origData []byte, publicKey []byte) (encryptStr string, err error
 		return base64.StdEncoding.EncodeToString(eData), err
 	}
 
-	if len(origData) <= maxSize {
-		return ecrypt(origData)
-	}
-
 	for len(origData) > 0 {
 		if len(origData) > maxSize {
 			tempData, err := ecrypt(origData[:maxSize])
