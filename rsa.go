@@ -1,13 +1,13 @@
 package gotool
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"os"
 )
 
@@ -53,13 +53,9 @@ func GenRsaKey(bits int) error {
 }
 
 //Rsa加密
-func RsaEncrypt(origData []byte, publicKeyFile string) (string, error) {
-	publicKeyByte, err := ioutil.ReadFile(publicKeyFile)
-	if err != nil {
-		return "", errors.New("公钥文件打开失败")
-	}
-
-	block, _ := pem.Decode(publicKeyByte)
+func RsaEncrypt(origData []byte, publicKey []byte) (encryptStr string, err error) {
+	var maxSize = 117
+	block, _ := pem.Decode(publicKey)
 	if block == nil {
 		return "", errors.New("public key error")
 	}
@@ -69,19 +65,43 @@ func RsaEncrypt(origData []byte, publicKeyFile string) (string, error) {
 	}
 	pub := pubInterface.(*rsa.PublicKey)
 
-	pubByte, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)
+	ecrypt := func(data []byte) (string, error) {
+		eData, err := rsa.EncryptPKCS1v15(rand.Reader, pub, data)
+		if err != nil {
+			return "", err
+		}
+		return base64.StdEncoding.EncodeToString(eData), err
+	}
 
-	return base64.StdEncoding.EncodeToString(pubByte), err
+	if len(origData) <= maxSize {
+		return ecrypt(origData)
+	}
+
+	for len(origData) > 0 {
+		if len(origData) > maxSize {
+			tempData, err := ecrypt(origData[:maxSize])
+			if err != nil {
+				return "", err
+			}
+			encryptStr += tempData
+			origData = origData[maxSize:]
+		} else {
+			tempData, err := ecrypt(origData)
+			if err != nil {
+				return "", err
+			}
+			encryptStr += tempData
+			origData = nil
+		}
+	}
+
+	return encryptStr, nil
 }
 
 //Rsa解密
-func RsaDecrypt(ciphertext string, privateKey string) ([]byte, error) {
-	privateKeyByte, err := ioutil.ReadFile(privateKey)
-	if err != nil {
-		return nil, errors.New("私钥文件打开失败")
-	}
-
-	block, _ := pem.Decode(privateKeyByte)
+func RsaDecrypt(ciphertext string, privateKey []byte) (decruptData []byte, err error) {
+	var maxSize = 172
+	block, _ := pem.Decode(privateKey)
 	if block == nil {
 		return nil, errors.New("private key error!")
 	}
@@ -89,9 +109,25 @@ func RsaDecrypt(ciphertext string, privateKey string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	decodeBytes, err := base64.StdEncoding.DecodeString(ciphertext)
-	if err != nil {
-		return nil, err
+
+	decode := func(str string) ([]byte, error) {
+		decodeBytes, err := base64.StdEncoding.DecodeString(str)
+		if err != nil {
+			return nil, err
+		}
+		return rsa.DecryptPKCS1v15(rand.Reader, priv, decodeBytes)
 	}
-	return rsa.DecryptPKCS1v15(rand.Reader, priv, decodeBytes)
+
+	for n := len(ciphertext) / maxSize; n > 0; n-- {
+		dData, err := decode(ciphertext[:maxSize])
+		if err != nil {
+			return nil, err
+		}
+
+		decruptData = bytes.Join([][]byte{decruptData, dData}, []byte(""))
+		ciphertext = ciphertext[maxSize:]
+	}
+
+	return decruptData, nil
+
 }
