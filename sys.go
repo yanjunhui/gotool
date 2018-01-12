@@ -29,6 +29,9 @@ func SSHPasswordLogin(hostAddr string, username string, password string) (*ssh.S
 			ssh.Password(password),
 		},
 		Timeout: time.Second * 5,
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			return nil
+		},
 	}
 
 	if client, err := ssh.Dial("tcp", hostAddr, config); err != nil {
@@ -54,6 +57,9 @@ func SSHKeyLogin(hostAddr string, username string, keyFilePath string) (session 
 		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			return nil
 		},
 	}
 
