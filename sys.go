@@ -69,6 +69,7 @@ func SSHKeyLogin(hostAddr string, username string, keyFilePath string) (session 
 func RemoteCommand(session *ssh.Session, command string) (string, error) {
 	var b bytes.Buffer
 	session.Stdout = &b
+	defer session.Close()
 	if err := session.Run(command); err == nil {
 		return b.String(), err
 	} else {
